@@ -9,4 +9,12 @@
   <ItemGroup>
     <PackageReference Include="Akka" Version="1.5.12" />
   </ItemGroup>
+  <ItemGroup>
+    <None Remove="Actors\" />
+    <None Remove="Messages\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Actors\" />
+    <Folder Include="Messages\" />
+  </ItemGroup>
 </Project>
