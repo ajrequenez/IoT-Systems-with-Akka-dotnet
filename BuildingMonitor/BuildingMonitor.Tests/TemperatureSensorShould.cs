@@ -27,7 +27,16 @@ namespace BuildingMonitor.Tests
         [Fact]
         public void StartWithNoTemperatureReading()
         {
-            Assert.Equal(1, 1);
+            var probe = CreateTestProbe();
+
+            var sensor = Sys.ActorOf(TemperatureSensor.Props("a", "1"));
+
+            sensor.Tell(new RequestTemperature(1), probe.Ref);
+
+            var received = probe.ExpectMsg<ResponseTemperature>();
+
+            Assert.Equal(1, received.RequestId);
+            Assert.Null(received.Temperature);
         }
     }
 }
