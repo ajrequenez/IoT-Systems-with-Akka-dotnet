@@ -29,7 +29,12 @@ namespace BuildingMonitor.Actors
                     _lastRecordedTemperature = m.Temperature;
                     Sender.Tell(new ResponseUpdateTemperature(m.RequestId));
                     break;
+                case RequestRegisterTemperatureSensor m when
+                        m.FloorId == _floorId && m.SensorId == _sensorId:
+                    Sender.Tell(new ResponseRegisterTemperatureSensor(m.RequestId, Context.Self));
+                    break;
                 default:
+                    Unhandled(message);
                     break;
 
             }

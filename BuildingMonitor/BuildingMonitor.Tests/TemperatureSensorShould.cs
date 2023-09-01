@@ -81,6 +81,44 @@ namespace BuildingMonitor.Tests
             Assert.Equal(50, received.RequestId);
             Assert.Equal(sensor, received.SensorRef);
         }
+
+        [Fact]
+        public void NotRegisterSensorWhenIncorrectFloorId()
+        {
+            var probe = CreateTestProbe();
+            var eventStreamProbe = CreateTestProbe();
+
+            Sys.EventStream.Subscribe(eventStreamProbe, typeof(Akka.Event.UnhandledMessage));
+
+            var sensor = Sys.ActorOf(TemperatureSensor.Props("a", "1"));
+
+            sensor.Tell(new RequestRegisterTemperatureSensor(50, "b", "1"), probe.Ref);
+
+            probe.ExpectNoMsg();
+
+            var unhandled = eventStreamProbe.ExpectMsg<Akka.Event.UnhandledMessage>();
+
+            Assert.IsType<RequestRegisterTemperatureSensor>(unhandled.Message);
+        }
+
+        [Fact]
+        public void NotRegisterSensorWhenIncorrectSensorId()
+        {
+            var probe = CreateTestProbe();
+            var eventStreamProbe = CreateTestProbe();
+
+            Sys.EventStream.Subscribe(eventStreamProbe, typeof(Akka.Event.UnhandledMessage));
+
+            var sensor = Sys.ActorOf(TemperatureSensor.Props("a", "1"));
+
+            sensor.Tell(new RequestRegisterTemperatureSensor(50, "a", "2"), probe.Ref);
+
+            probe.ExpectNoMsg();
+
+            var unhandled = eventStreamProbe.ExpectMsg<Akka.Event.UnhandledMessage>();
+
+            Assert.IsType<RequestRegisterTemperatureSensor>(unhandled.Message);
+        }
     }
 }
 
