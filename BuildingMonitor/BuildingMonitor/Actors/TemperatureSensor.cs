@@ -22,8 +22,12 @@ namespace BuildingMonitor.Actors
                 case RequestMetadata m:
                     Sender.Tell(new ResponseMetadata(m.RequestId, _floorId, _sensorId));
                     break;
-                case RequestTemperature t:
-                    Sender.Tell(new ResponseTemperature(t.RequestId, _lastRecordedTemperature));
+                case RequestTemperature m:
+                    Sender.Tell(new ResponseTemperature(m.RequestId, _lastRecordedTemperature));
+                    break;
+                case RequestUpdateTemperature m:
+                    _lastRecordedTemperature = m.Temperature;
+                    Sender.Tell(new ResponseUpdateTemperature(m.RequestId));
                     break;
                 default:
                     break;
