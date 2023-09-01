@@ -66,6 +66,21 @@ namespace BuildingMonitor.Tests
             Assert.Equal(41, receivedTemperature.RequestId);
             Assert.Equal(97.5, receivedTemperature.Temperature);
         }
+
+        [Fact]
+        public void RegisterSensor()
+        {
+            var probe = CreateTestProbe();
+
+            var sensor = Sys.ActorOf(TemperatureSensor.Props("a", "1"));
+
+            sensor.Tell(new RequestRegisterTemperatureSensor(50, "a", "1"), probe.Ref);
+
+            var received = probe.ExpectMsg<ResponseRegisterTemperatureSensor>();
+
+            Assert.Equal(50, received.RequestId);
+            Assert.Equal(sensor, received.SensorRef);
+        }
     }
 }
 
