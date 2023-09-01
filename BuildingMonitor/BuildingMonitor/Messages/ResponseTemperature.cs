@@ -1,7 +1,6 @@
-﻿using System;
-namespace BuildingMonitor.Messages
+﻿namespace BuildingMonitor.Messages
 {
-	public class ResponseTemperature
+	public sealed class ResponseTemperature
 	{
 		public long RequestId { get; }
 		public double? Temperature { get; }

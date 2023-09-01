@@ -1,8 +1,8 @@
 ﻿namespace BuildingMonitor.Messages
 {
-	public class ResponseUpdateTemperature
+	public sealed class ResponseUpdateTemperature
 	{
-		public long RequestId { get; }
+        public long RequestId { get; }
 
 		public ResponseUpdateTemperature(long requestId)
 		{

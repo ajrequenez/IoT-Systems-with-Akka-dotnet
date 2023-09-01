@@ -1,5 +1,4 @@
-﻿
-namespace BuildingMonitor.Messages
+﻿namespace BuildingMonitor.Messages
 {
 	public sealed class RequestMetadata
 	{

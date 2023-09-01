@@ -1,6 +1,6 @@
 ﻿namespace BuildingMonitor.Messages
 {
-	 public sealed class ResponseMetadata
+    public sealed class ResponseMetadata
 	{
 		public long RequestId { get; }
 		public string FloorId { get; }
