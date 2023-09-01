@@ -53,7 +53,7 @@ namespace BuildingMonitor.Tests
         }
 
         [Fact]
-        public void UpdateTemperatureReading()
+        public void UpdateNewTemperatureReading()
         {
             var probe = CreateTestProbe();
 
