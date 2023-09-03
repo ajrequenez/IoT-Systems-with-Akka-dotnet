@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Immutable;
 using Akka.Actor;
 using BuildingMonitor.Actors;
 using BuildingMonitor.Messages;
@@ -35,7 +36,9 @@ namespace BuildingMonitor.Actors
                         newSensorActor.Forward(m);
                     }
                     break;
-
+                case RequestTemperatureSensorIds m:
+                    Sender.Tell(new ResponseTemperatureSensorIds(m.RequestId, _sensorIdToActorRefMap.Keys.ToImmutableHashSet()));
+                    break;
                 default:
                     Unhandled(message);
                     break;

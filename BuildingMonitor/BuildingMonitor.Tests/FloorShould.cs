@@ -59,5 +59,37 @@ namespace BuildingMonitor.Tests
 			Assert.IsType<RequestRegisterTemperatureSensor>(unhandled.Message);
 			Assert.Equal(floor, unhandled.Recipient);
 		}
+
+		[Fact]
+		public void ReturnAllRegisteredTemperatureSensorIds(){
+			var probe = CreateTestProbe();
+			var floor = Sys.ActorOf(Floor.Props("d"));
+
+			floor.Tell(new RequestRegisterTemperatureSensor(40, "d", "1"), probe.Ref);
+			probe.ExpectMsg<ResponseRegisterTemperatureSensor>();
+
+			floor.Tell(new RequestRegisterTemperatureSensor(41, "d", "2"), probe.Ref);
+			probe.ExpectMsg<ResponseRegisterTemperatureSensor>();
+
+			floor.Tell(new RequestTemperatureSensorIds(42), probe.Ref);
+			var received = probe.ExpectMsg<ResponseTemperatureSensorIds>();
+
+			Assert.Equal(42, received.RequestId);
+			Assert.Equal(new HashSet<string> { "1", "2" }, received.SensorIds);
+
+		}
+
+		[Fact]
+		public void ReturnEmptySetWhenNoTemperatureSensorsRegistered(){
+			var probe = CreateTestProbe();
+			var floor = Sys.ActorOf(Floor.Props("e"));
+
+			floor.Tell(new RequestTemperatureSensorIds(50), probe.Ref);
+			var received = probe.ExpectMsg<ResponseTemperatureSensorIds>();
+
+			Assert.Equal(50, received.RequestId);
+			Assert.Equal(new HashSet<string>(), received.SensorIds);
+			Assert.Empty(received.SensorIds);
+		}
     }
 }
