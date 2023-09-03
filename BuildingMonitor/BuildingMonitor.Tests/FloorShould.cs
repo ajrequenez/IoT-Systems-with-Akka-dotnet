@@ -40,5 +40,24 @@ namespace BuildingMonitor.Tests
 
 			Assert.Equal(firstSensor, secondSensor);
         }
+
+		[Fact]
+		public void NotRegisterWhenMismatchedFloor()
+		{
+			var probe = CreateTestProbe();
+			var eventStreamProbe = CreateTestProbe();
+
+			Sys.EventStream.Subscribe(eventStreamProbe, typeof(Akka.Event.UnhandledMessage));
+
+			var floor = Sys.ActorOf(Floor.Props("c"));
+
+			floor.Tell(new RequestRegisterTemperatureSensor(30, "a", "1"), probe.Ref);
+			probe.ExpectNoMsg();
+
+			var unhandled = eventStreamProbe.ExpectMsg<Akka.Event.UnhandledMessage>();
+
+			Assert.IsType<RequestRegisterTemperatureSensor>(unhandled.Message);
+			Assert.Equal(floor, unhandled.Recipient);
+		}
     }
 }

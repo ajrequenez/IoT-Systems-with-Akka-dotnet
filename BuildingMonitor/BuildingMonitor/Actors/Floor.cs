@@ -19,7 +19,7 @@ namespace BuildingMonitor.Actors
         {
             switch (message)
             {
-                case RequestRegisterTemperatureSensor m:
+                case RequestRegisterTemperatureSensor m when m.FloorId == _floorId:
                     if(_sensorIdToActorRefMap.TryGetValue(m.SensorId, out var existingActor))
                     {
                         // Return ref is existing
@@ -37,6 +37,7 @@ namespace BuildingMonitor.Actors
                     break;
 
                 default:
+                    Unhandled(message);
                     break;
             }
         }
