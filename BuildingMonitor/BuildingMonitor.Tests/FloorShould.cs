@@ -1,4 +1,5 @@
-﻿using Akka.TestKit.Xunit2;
+﻿using Akka.Actor;
+using Akka.TestKit.Xunit2;
 using BuildingMonitor.Actors;
 using BuildingMonitor.Messages;
 
@@ -90,6 +91,42 @@ namespace BuildingMonitor.Tests
 			Assert.Equal(50, received.RequestId);
 			Assert.Equal(new HashSet<string>(), received.SensorIds);
 			Assert.Empty(received.SensorIds);
+		}
+
+		[Fact]
+		public void ReturnTemperatureSensorsOnlyForActiveActors(){
+			var probe = CreateTestProbe();
+			var floor = Sys.ActorOf(Floor.Props("f"));
+
+			floor.Tell(new RequestRegisterTemperatureSensor(60, "f", "1"), probe.Ref);
+			var received = probe.ExpectMsg<ResponseRegisterTemperatureSensor>();
+			var sensor1 = probe.LastSender;
+
+			floor.Tell(new RequestRegisterTemperatureSensor(61, "f", "2"), probe.Ref);
+			var received2 = probe.ExpectMsg<ResponseRegisterTemperatureSensor>();
+			var sensor2 = probe.LastSender;
+
+			probe.Watch(sensor1);
+			sensor1.Tell(PoisonPill.Instance);
+			probe.ExpectTerminated(sensor1);
+
+			floor.Tell(new RequestTemperatureSensorIds(63), probe.Ref);
+			var received3 = probe.ExpectMsg<ResponseTemperatureSensorIds>();
+
+			Assert.Equal(63, received3.RequestId);
+			Assert.Equal(new HashSet<string> { "2" }, received3.SensorIds);
+			Assert.Single(received3.SensorIds);
+
+			probe.Watch(sensor2);
+			sensor2.Tell(PoisonPill.Instance);
+			probe.ExpectTerminated(sensor2);
+
+			floor.Tell(new RequestTemperatureSensorIds(64), probe.Ref);
+			var received4 = probe.ExpectMsg<ResponseTemperatureSensorIds>();
+
+			Assert.Equal(64, received4.RequestId);
+			Assert.Equal(new HashSet<string>(), received4.SensorIds);
+			Assert.Empty(received4.SensorIds);
 		}
     }
 }

@@ -32,12 +32,17 @@ namespace BuildingMonitor.Actors
                         var newSensorActor = Context.ActorOf(
                             TemperatureSensor.Props(m.FloorId, m.SensorId),
                             $"temperature-sensor-{m.SensorId}");
+                        Context.Watch(newSensorActor);
                         _sensorIdToActorRefMap.Add(m.SensorId, newSensorActor);
                         newSensorActor.Forward(m);
                     }
                     break;
                 case RequestTemperatureSensorIds m:
                     Sender.Tell(new ResponseTemperatureSensorIds(m.RequestId, _sensorIdToActorRefMap.Keys.ToImmutableHashSet()));
+                    break;
+                case Terminated m:
+                    var sensorId = _sensorIdToActorRefMap.First(x => x.Value == m.ActorRef).Key;
+                    _sensorIdToActorRefMap.Remove(sensorId);
                     break;
                 default:
                     Unhandled(message);
