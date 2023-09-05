@@ -40,6 +40,15 @@ namespace BuildingMonitor.Actors
                 case RequestTemperatureSensorIds m:
                     Sender.Tell(new ResponseTemperatureSensorIds(m.RequestId, _sensorIdToActorRefMap.Keys.ToImmutableHashSet()));
                     break;
+                case RequestAllTemperatures m:
+                    var actorRefToSensorIdMap = new Dictionary<IActorRef, string>();
+                    foreach(var item in _sensorIdToActorRefMap)
+                    {
+                        actorRefToSensorIdMap.Add(item.Value, item.Key);
+                    }
+                    Context.ActorOf(
+                        FloorQuery.Props(actorRefToSensorIdMap, m.RequestId, Sender, TimeSpan.FromSeconds(3)));
+                    break;
                 case Terminated m:
                     var sensorId = _sensorIdToActorRefMap.First(x => x.Value == m.ActorRef).Key;
                     _sensorIdToActorRefMap.Remove(sensorId);

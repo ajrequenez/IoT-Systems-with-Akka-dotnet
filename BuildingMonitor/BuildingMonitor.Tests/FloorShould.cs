@@ -128,5 +128,34 @@ namespace BuildingMonitor.Tests
 			Assert.Equal(new HashSet<string>(), received4.SensorIds);
 			Assert.Empty(received4.SensorIds);
 		}
+
+		[Fact]
+		public void InitiateQueryWhenRequested()
+		{
+			var probe = CreateTestProbe();
+			var floor = Sys.ActorOf(Floor.Props("g"));
+
+			floor.Tell(new RequestRegisterTemperatureSensor(70, "g", "1"), probe.Ref);
+			probe.ExpectMsg<ResponseRegisterTemperatureSensor>();
+			var sensor1 = probe.LastSender;
+
+			floor.Tell(new RequestRegisterTemperatureSensor(71, "g", "2"), probe.Ref);
+			probe.ExpectMsg<ResponseRegisterTemperatureSensor>();
+			var sensor2 = probe.LastSender;
+
+			sensor1.Tell(new RequestUpdateTemperature(0, 100.0));
+			sensor2.Tell(new RequestUpdateTemperature(0, 80.0));
+
+			floor.Tell(new RequestAllTemperatures(77), probe.Ref);
+			var response = probe.ExpectMsg<ResponseAllTemperatures>(x => x.RequestId == 77);
+
+			Assert.Equal(2, response.Temperatures.Count);
+
+			var reading1 = Assert.IsAssignableFrom<TemperatureAvailable>(response.Temperatures["1"]);
+			Assert.Equal(100.0, reading1.Temperature);
+
+			var reading2 = Assert.IsAssignableFrom<TemperatureAvailable>(response.Temperatures["2"]);
+			Assert.Equal(80.0, reading2.Temperature);
+		}
     }
 }
