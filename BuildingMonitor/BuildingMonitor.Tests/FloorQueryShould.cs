@@ -140,6 +140,53 @@ namespace BuildingMonitor.Tests
 
 			Assert.IsAssignableFrom<TemperatureSensorNotAvailable>(response.Temperatures["sensor2"]);
 		}
+
+		[Fact]
+		public void ReturnSensorTimedOutWhenSensorDoesNotAnswerInTime()
+		{
+			var queryRequester = CreateTestProbe();
+
+			var temperatureSensor1 = CreateTestProbe();
+			var temperatureSensor2 = CreateTestProbe();
+			
+			var floorQuery = Sys.ActorOf(FloorQuery.Props(
+				actorToSensorId: new Dictionary<IActorRef, string>
+				{
+					[temperatureSensor1.Ref] = "sensor1",
+					[temperatureSensor2.Ref] = "sensor2",
+				},
+				requestId: 40,
+				requester: queryRequester.Ref,
+				timeout: TimeSpan.FromSeconds(1)
+			));
+
+			temperatureSensor1.ExpectMsg<RequestTemperature>((m, sender) =>
+			{
+				Assert.Equal(FloorQuery.TemperatureRequestCorrelationId, m.RequestId);
+				Assert.Equal(floorQuery, sender);
+			});
+
+			temperatureSensor2.ExpectMsg<RequestTemperature>((m, sender) =>
+			{
+				Assert.Equal(FloorQuery.TemperatureRequestCorrelationId, m.RequestId);
+				Assert.Equal(floorQuery, sender);
+			});
+
+			floorQuery.Tell(new ResponseTemperature(FloorQuery.TemperatureRequestCorrelationId, 74.0), temperatureSensor1.Ref);
+			
+			// Don't respond from sensor2
+
+            var response = queryRequester.ExpectMsg<ResponseAllTemperatures>(TimeSpan.FromSeconds(5));
+            
+            Assert.Equal(40, response.RequestId);
+            Assert.Equal(2, response.Temperatures.Count);
+
+            var temperatureReading1 = Assert.IsAssignableFrom<TemperatureAvailable>(response.Temperatures["sensor1"]);
+            Assert.Equal(74.0, temperatureReading1.Temperature);
+
+
+			Assert.IsAssignableFrom<TemperatureSensorTimedOut>(response.Temperatures["sensor2"]);
+		}
     }
 }
 

@@ -8,6 +8,7 @@ namespace BuildingMonitor.Actors
 	public class FloorQuery : UntypedActor
 	{
 		public static readonly long TemperatureRequestCorrelationId = 42;
+        private ICancelable _queryTimeoutTimer;
         private readonly IActorRef _requester;
         private readonly long _requestId;
         private readonly TimeSpan _timeout;
@@ -27,6 +28,8 @@ namespace BuildingMonitor.Actors
             _timeout = timeout;
 
             _stillAwaitingResponse = new HashSet<IActorRef>(_actorToSensorId.Keys);
+
+            _queryTimeoutTimer = Context.System.Scheduler.ScheduleTellOnceCancelable(timeout, Self, QueryTimeout.Instance, Self);
         }
 
         protected override void PreStart() 
@@ -37,23 +40,33 @@ namespace BuildingMonitor.Actors
                 sensor.Tell(new RequestTemperature(TemperatureRequestCorrelationId), Self);
             }
         }
+
+        protected override void PostStop()
+        {
+            _queryTimeoutTimer.Cancel();
+        }
         protected override void OnReceive(object message)
         {
             switch(message) {
                 case ResponseTemperature m when m.RequestId == TemperatureRequestCorrelationId:
-                    ITemperatureQueryResult reading = null;
+                    ITemperatureQueryResult reading = NoTemperatureReadingRecordedYet.Instance;
                     if (m.Temperature.HasValue)
                     {
                         reading = new TemperatureAvailable(m.Temperature.Value);
-                    }
-                    else
-                    {
-                        reading = NoTemperatureReadingRecordedYet.Instance;
                     }
                     RecordSensorResponse(Sender, reading);
                     break;
                 case Terminated m:
                     RecordSensorResponse(m.ActorRef, TemperatureSensorNotAvailable.Instance);
+                    break;
+                case QueryTimeout m:
+                    foreach(var sensor in _stillAwaitingResponse)
+                    {
+                        var sensorId = _actorToSensorId[sensor];
+                        _responsesReceived.Add(sensorId, TemperatureSensorTimedOut.Instance);
+                    }
+                    _requester.Tell(new ResponseAllTemperatures(_requestId, _responsesReceived.ToImmutableDictionary()));
+                    Context.Stop(Self);
                     break;
                 default:
                     Unhandled(message);
@@ -70,7 +83,7 @@ namespace BuildingMonitor.Actors
         private void RecordSensorResponse(IActorRef sensorActor, ITemperatureQueryResult reading)
         {
             Context.Unwatch(sensorActor);
-            
+
             var sensorId = _actorToSensorId[sensorActor];
             _stillAwaitingResponse.Remove(sensorActor);
             _responsesReceived.Add(sensorId, reading);
@@ -78,6 +91,7 @@ namespace BuildingMonitor.Actors
             if(_stillAwaitingResponse.Count == 0)
             {
                 _requester.Tell(new ResponseAllTemperatures(_requestId, _responsesReceived.ToImmutableDictionary()));
+                Context.Stop(Self);
             }
 
         }
