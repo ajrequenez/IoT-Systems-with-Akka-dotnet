@@ -50,9 +50,10 @@ namespace BuildingMonitor.Actors
                     {
                         reading = NoTemperatureReadingRecordedYet.Instance;
                     }
-
                     RecordSensorResponse(Sender, reading);
-
+                    break;
+                case Terminated m:
+                    RecordSensorResponse(m.ActorRef, TemperatureSensorNotAvailable.Instance);
                     break;
                 default:
                     Unhandled(message);
@@ -68,6 +69,8 @@ namespace BuildingMonitor.Actors
 
         private void RecordSensorResponse(IActorRef sensorActor, ITemperatureQueryResult reading)
         {
+            Context.Unwatch(sensorActor);
+            
             var sensorId = _actorToSensorId[sensorActor];
             _stillAwaitingResponse.Remove(sensorActor);
             _responsesReceived.Add(sensorId, reading);
